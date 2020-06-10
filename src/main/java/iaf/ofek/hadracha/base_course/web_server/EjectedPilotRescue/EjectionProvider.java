@@ -27,13 +27,17 @@ public class EjectionProvider implements IEjectionProvider {
     public void setRescuer(int ejectionId, String rescuerId) {
         EjectedPilotInfo ejectedPilotInfo = dataBase.getByID(ejectionId, EjectedPilotInfo.class);
         // Has to check if ejectionId is a valid Id or not, means ejection is real or null!!!!!!!!!
-        ejectedPilotInfo.setRescuedBy(rescuerId);
-        dataBase.update(ejectedPilotInfo);
+        if (ejectedPilotInfo.getRescuedBy() == null) {
+            ejectedPilotInfo.setRescuedBy(rescuerId);
+            dataBase.update(ejectedPilotInfo);
+        }
     }
 
     public void allocateAirplanes(int ejectionId, String rescuerId) {
         EjectedPilotInfo ejectedPilotInfo = dataBase.getByID(ejectionId, EjectedPilotInfo.class);
-        airplanesAllocationManager.allocateAirplanesForEjection(ejectedPilotInfo, rescuerId);
+        if (ejectedPilotInfo.getRescuedBy() == null) {
+            airplanesAllocationManager.allocateAirplanesForEjection(ejectedPilotInfo, rescuerId);
+        }
     }
 
 }

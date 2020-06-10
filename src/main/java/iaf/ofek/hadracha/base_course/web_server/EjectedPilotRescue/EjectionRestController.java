@@ -24,8 +24,8 @@ public class EjectionRestController {
 
     @GetMapping("/takeResponsibility")
     public List<EjectedPilotInfo> takeResponsibility(int ejectionId, @CookieValue(value = "client-id") String clientId) {
-        ejectionProvider.setRescuer(ejectionId, clientId);
         ejectionProvider.allocateAirplanes(ejectionId, clientId);
+        ejectionProvider.setRescuer(ejectionId, clientId);
         return ejectionProvider.getAllEjections();
     }
 }

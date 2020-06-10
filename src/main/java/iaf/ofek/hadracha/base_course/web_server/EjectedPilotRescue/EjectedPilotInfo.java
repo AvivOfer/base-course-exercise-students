@@ -25,9 +25,7 @@ public class EjectedPilotInfo implements Entity<EjectedPilotInfo> {
     }
 
     public void setRescuedBy(String rescuedBy) {
-        if (this.rescuedBy == null) {
             this.rescuedBy = rescuedBy;
-        }
     }
 
     @Override
