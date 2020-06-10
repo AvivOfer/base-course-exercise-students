@@ -9,10 +9,13 @@ import java.util.List;
 
 @Service
 public class EjectionProvider implements IEjectionProvider {
-    CrudDataBase dataBase;
+    private CrudDataBase dataBase;
+    private AirplanesAllocationManager airplanesAllocationManager;
 
-    public EjectionProvider(@Autowired CrudDataBase dataBase) {
+    public EjectionProvider(@Autowired CrudDataBase dataBase,
+                            @Autowired AirplanesAllocationManager airplanesAllocationManager) {
         this.dataBase = dataBase;
+        this.airplanesAllocationManager = airplanesAllocationManager;
     }
 
     @Override
@@ -26,6 +29,11 @@ public class EjectionProvider implements IEjectionProvider {
         // Has to check if ejectionId is a valid Id or not, means ejection is real or null!!!!!!!!!
         ejectedPilotInfo.setRescuedBy(rescuerId);
         dataBase.update(ejectedPilotInfo);
+    }
+
+    public void allocateAirplanes(int ejectionId, String rescuerId) {
+        EjectedPilotInfo ejectedPilotInfo = dataBase.getByID(ejectionId, EjectedPilotInfo.class);
+        airplanesAllocationManager.allocateAirplanesForEjection(ejectedPilotInfo, rescuerId);
     }
 
 }
