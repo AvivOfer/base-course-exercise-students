@@ -47,16 +47,16 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
         this.geographicCalculations = geographicCalculations;
 
         for (int i = 0; i < 80; i++) {
-            foo();
+            createAirplaneForSimulation();
         }
 
-        executor.scheduleAtFixedRate(this::UpdateSituation, 0, SIMULATION_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+        executor.scheduleAtFixedRate(this::updateSituation, 0, SIMULATION_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     // all airplane kinds that can be used
     private List<AirplaneKind> airplaneKinds = AirplaneKind.LeafKinds();
 
-    private void foo() {
+    private void createAirplaneForSimulation() {
         AirplaneKind kind = airplaneKinds.get(random.nextInt(airplaneKinds.size()));
         Airplane airplane = new Airplane(kind, lastId++);
         airplane.coordinates=new Coordinates(randomGenerators.generateRandomDoubleInRange(LAT_MIN, LAT_MAX),
@@ -66,7 +66,7 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
         airplanes.add(airplane);
     }
 
-    private void UpdateSituation() {
+    private void updateSituation() {
         try {
             synchronized (lock) {
                 if (random.nextDouble() < CHANCE_FOR_NUMBER_CHANGE) { // chance to remove an airplane
@@ -90,7 +90,7 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
                 });
 
                 if (random.nextDouble() < CHANCE_FOR_NUMBER_CHANGE) { // chance to add an airplane
-                    foo();
+                    createAirplaneForSimulation();
                 }
             }
         }

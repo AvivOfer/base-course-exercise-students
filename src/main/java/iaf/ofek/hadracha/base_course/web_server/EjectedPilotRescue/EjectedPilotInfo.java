@@ -18,7 +18,17 @@ public class EjectedPilotInfo implements Entity<EjectedPilotInfo> {
     /**
      * The rescue manager's client id, or null if non.
      */
-    public String rescuedBy;
+    private String rescuedBy;
+
+    public String getRescuedBy() {
+        return rescuedBy;
+    }
+
+    public void setRescuedBy(String rescuedBy) {
+        if (this.rescuedBy == null) {
+            this.rescuedBy = rescuedBy;
+        }
+    }
 
     @Override
     public int getId() {
@@ -39,25 +49,25 @@ public class EjectedPilotInfo implements Entity<EjectedPilotInfo> {
         }
     }
 
-    public void allocateAirplane(Airplane airplane, String controllerClientId){
+    public void allocateAirplane(Airplane airplane, String controllerClientId) {
         AllocatedAirplane allocatedAirplane = new AllocatedAirplane(airplane);
         allocatedAirplanes.add(allocatedAirplane);
         airplane.flyTo(coordinates, controllerClientId);
         airplane.onArrivedAtDestination(this::airplaneArrived);
     }
 
-    private void airplaneArrived(Airplane airplane){
+    private void airplaneArrived(Airplane airplane) {
 
         allocatedAirplanes.stream()
                 .filter(allocatedAirplane -> allocatedAirplane.airplane.id == airplane.id)
-                .forEach(allocatedAirplane -> allocatedAirplane.arrivedAtDestination=true);
+                .forEach(allocatedAirplane -> allocatedAirplane.arrivedAtDestination = true);
 
-        if (allocatedAirplanes.stream().allMatch(allocatedAirplane -> allocatedAirplane.arrivedAtDestination)){
+        if (allocatedAirplanes.stream().allMatch(allocatedAirplane -> allocatedAirplane.arrivedAtDestination)) {
             allocatedAirplanes.forEach(allocatedAirplane -> allocatedAirplane.airplane.unAllocate());
         }
     }
 
-    private class AllocatedAirplane{
+    private class AllocatedAirplane {
         Airplane airplane;
         boolean arrivedAtDestination;
 
