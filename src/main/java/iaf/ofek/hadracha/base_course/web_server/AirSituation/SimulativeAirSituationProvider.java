@@ -1,6 +1,7 @@
 package iaf.ofek.hadracha.base_course.web_server.AirSituation;
 
 import iaf.ofek.hadracha.base_course.web_server.Utilities.GeographicCalculations;
+import iaf.ofek.hadracha.base_course.web_server.Utilities.Globals;
 import iaf.ofek.hadracha.base_course.web_server.Utilities.RandomGenerators;
 import iaf.ofek.hadracha.base_course.web_server.Data.Coordinates;
 import org.springframework.stereotype.Service;
@@ -20,14 +21,17 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
 
     private static final double CHANCE_FOR_NUMBER_CHANGE = 0.005;
     private static final double CHANCE_FOR_AZIMUTH_CHANGE = 0.05;
-    private static int STEP_SIZE = 15;
-    private static int SIMULATION_INTERVAL_MILLIS = 100;
-    private double LAT_MIN = 29.000;
-    private double LAT_MAX = 36.000;
-    private double LON_MIN = 32.000;
-    private double LON_MAX = 46.500;
+    private static final int STEP_SIZE = 15;
+    private static final int SIMULATION_INTERVAL_MILLIS = 100;
+    private static final double LAT_MIN = 29.000;
+    private static final double LAT_MAX = 36.000;
+    private static final double LON_MIN = 32.000;
+    private static final double LON_MAX = 46.500;
     private static final double AZIMUTH_STEP = STEP_SIZE / (2000.0 / SIMULATION_INTERVAL_MILLIS);
-
+    private static final int MAX_NUMBER_OF_AIRPLANES = 80;
+    private static final double MAX_BASE_VELOCITY = 70;
+    private static final double MIN_BASE_VELOCITY = 40;
+    private final double THRESHOLD_TO_ARRIVE_TO_DESTINATION = 500;
 
     // Scheduler to run advancement task repeatedly
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -46,7 +50,7 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
         this.randomGenerators = randomGenerators;
         this.geographicCalculations = geographicCalculations;
 
-        for (int i = 0; i < 80; i++) {
+        for (int i = 0; i < MAX_NUMBER_OF_AIRPLANES; i++) {
             createAirplaneForSimulation();
         }
 
@@ -61,8 +65,8 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
         Airplane airplane = new Airplane(kind, lastId++);
         airplane.coordinates=new Coordinates(randomGenerators.generateRandomDoubleInRange(LAT_MIN, LAT_MAX),
                 randomGenerators.generateRandomDoubleInRangeWithNormalDistribution(LON_MIN, LON_MAX));
-        airplane.setAzimuth(randomGenerators.generateRandomDoubleInRange(0,360));
-        airplane.velocity = randomGenerators.generateRandomDoubleInRange(40, 70)*airplane.getAirplaneKind().getVelocityFactor();
+        airplane.setAzimuth(randomGenerators.generateRandomDoubleInRange(0,Globals.HALF_A_CIRCLE_IN_DEGREES * 2));
+        airplane.velocity = randomGenerators.generateRandomDoubleInRange(MIN_BASE_VELOCITY, MAX_BASE_VELOCITY)*airplane.getAirplaneKind().getVelocityFactor();
         airplanes.add(airplane);
     }
 
@@ -82,11 +86,12 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
                     airplane.radialAcceleration = calculateNewRadialAcceleration(airplane);
 
                     airplane.setAzimuth(airplane.getAzimuth() + airplane.radialAcceleration);
-                    airplane.coordinates.lat += Math.sin(worldAzimuthToEuclidRadians(airplane.getAzimuth())) * airplane.velocity / 100000;
-                    airplane.coordinates.lon += Math.cos(worldAzimuthToEuclidRadians(airplane.getAzimuth())) * airplane.velocity / 100000;
+                    final int SCALE = 100000;   // Scales the map
+                    airplane.coordinates.lat += Math.sin(worldAzimuthToEuclidRadians(airplane.getAzimuth())) * airplane.velocity / SCALE;
+                    airplane.coordinates.lon += Math.cos(worldAzimuthToEuclidRadians(airplane.getAzimuth())) * airplane.velocity / SCALE;
                     if (airplane.coordinates.lat < LAT_MIN || airplane.coordinates.lat > LAT_MAX ||
                             airplane.coordinates.lon < LON_MIN || airplane.coordinates.lon > LON_MAX)
-                        airplane.setAzimuth(airplane.getAzimuth() + 180);
+                        airplane.setAzimuth(airplane.getAzimuth() + Globals.HALF_A_CIRCLE_IN_DEGREES);
                 });
 
                 if (random.nextDouble() < CHANCE_FOR_NUMBER_CHANGE) { // chance to add an airplane
@@ -110,7 +115,7 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
             }
 
             double azimuthToDestenation = geographicCalculations.azimuthBetween(currLocation, headingTo);
-            double differnceOfAzimuth = 180-geographicCalculations.normalizeAzimuth(azimuthToDestenation - airplane.getAzimuth());
+            double differnceOfAzimuth = Globals.HALF_A_CIRCLE_IN_DEGREES-geographicCalculations.normalizeAzimuth(azimuthToDestenation - airplane.getAzimuth());
 
             return (differnceOfAzimuth > 0 ? Math.min(AZIMUTH_STEP*10, differnceOfAzimuth/5) : Math.max(-AZIMUTH_STEP*10, differnceOfAzimuth/5))/2;
 
@@ -126,7 +131,7 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
     }
 
     private boolean arrivedToDestination(Coordinates currLocation, Coordinates headingTo) {
-        return geographicCalculations.distanceBetween(currLocation, headingTo) < 500;
+        return geographicCalculations.distanceBetween(currLocation, headingTo) < THRESHOLD_TO_ARRIVE_TO_DESTINATION;
     }
 
     /**
@@ -134,8 +139,8 @@ public class SimulativeAirSituationProvider implements AirSituationProvider {
      * radians in which 0 is right and increases counter clockwise.
      */
     private double worldAzimuthToEuclidRadians(double azimuth) {
-        double inEuclidDegrees = -azimuth + 90;
-        return inEuclidDegrees * Math.PI / 180;
+        double inEuclidDegrees = -azimuth + (double)Globals.HALF_A_CIRCLE_IN_DEGREES / 2;
+        return inEuclidDegrees * Math.PI / Globals.HALF_A_CIRCLE_IN_DEGREES;
     }
 
     @Override

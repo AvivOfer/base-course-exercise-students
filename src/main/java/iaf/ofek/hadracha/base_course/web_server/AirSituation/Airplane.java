@@ -1,7 +1,8 @@
 package iaf.ofek.hadracha.base_course.web_server.AirSituation;
 
-import iaf.ofek.hadracha.base_course.web_server.Data.Entity;
 import iaf.ofek.hadracha.base_course.web_server.Data.Coordinates;
+import iaf.ofek.hadracha.base_course.web_server.Data.Entity;
+import iaf.ofek.hadracha.base_course.web_server.Utilities.Globals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,9 +64,9 @@ public class Airplane implements Entity<Airplane> {
      * Sets the azimuth of the aircraft. The given azimuth will be normalized to [0..360]
      */
     public void setAzimuth(double azimuth) {
-        while (azimuth<0)
-            azimuth+=360;
-        this.azimuth = azimuth%360;
+        while (azimuth < 0)
+            azimuth += (Globals.HALF_A_CIRCLE_IN_DEGREES * 2);
+        this.azimuth = azimuth % (Globals.HALF_A_CIRCLE_IN_DEGREES * 2);
     }
 
     @Override
@@ -83,20 +84,20 @@ public class Airplane implements Entity<Airplane> {
     }
 
     public boolean isAllocated() {
-        return controllerClientId!=null;
+        return controllerClientId != null;
     }
 
-    public void unAllocate(){
+    public void unAllocate() {
         headingTo = null;
         controllerClientId = null;
         arrivedAtDestinationCallbacks.clear();
     }
 
-    public void onArrivedAtDestination(Consumer<Airplane> callback){
+    public void onArrivedAtDestination(Consumer<Airplane> callback) {
         arrivedAtDestinationCallbacks.add(callback);
     }
 
-    void raiseArrivedAtDestinationEvent(){
+    void raiseArrivedAtDestinationEvent() {
         //why new array list? because callback might call unAllocate which modifies this collection
         new ArrayList<>(arrivedAtDestinationCallbacks).forEach(airplaneConsumer -> airplaneConsumer.accept(this));
     }
